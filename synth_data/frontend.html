@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cliniverse - Synthetic Patient Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .spinner { border: 4px solid rgba(0,0,0,0.1); width: 24px; height: 24px; border-radius: 50%; border-left-color: #09f; animation: spin 1s ease infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #patient-list-container li.selected { background-color: #eff6ff; border-left-color: #2563eb; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="flex h-screen">
+        <!-- Sidebar for Patient List -->
+        <aside class="w-1/4 bg-white border-r border-gray-200 flex flex-col">
+            <div class="p-4 border-b">
+                <h1 class="text-xl font-bold text-gray-900">Patient Cohort</h1>
+                <p class="text-sm text-gray-500">Loaded from DB</p>
+            </div>
+            <div class="p-4">
+                 <button id="generateButton" class="w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
+                    Generate New
+                </button>
+            </div>
+            <div id="status-container" class="hidden mx-4 mb-2 p-2 text-sm rounded-md"></div>
+            <nav id="patient-list-container" class="flex-grow overflow-y-auto">
+                <!-- Patient list will be rendered here -->
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main id="main-content" class="w-3/4 bg-gray-50 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            <!-- Patient details will be rendered here -->
+        </main>
+    </div>
+
+    <script>
+        const API_BASE_URL = "http://127.0.0.1:8000";
+        const elements = {
+            generateButton: document.getElementById('generateButton'),
+            patientListContainer: document.getElementById('patient-list-container'),
+            mainContent: document.getElementById('main-content'),
+            statusContainer: document.getElementById('status-container'),
+        };
+
+        function showStatus(message, isError = false) {
+            const container = elements.statusContainer;
+            container.className = `mx-4 mb-2 p-2 text-sm rounded-md flex items-center gap-2 ${isError ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'}`;
+            container.innerHTML = message;
+        }
+
+        function hideStatus() {
+            elements.statusContainer.className = 'hidden';
+        }
+
+        function renderBadge(text, color = 'blue') {
+            const colors = { P0: 'bg-red-100 text-red-800', P1: 'bg-yellow-100 text-yellow-800', P2: 'bg-blue-100 text-blue-800' };
+            return `<span class="text-xs font-bold px-2 py-1 rounded-full ${colors[color]}">${text}</span>`;
+        }
+
+        async function fetchAndRenderPatientList() {
+            showStatus('<div class="spinner"></div> Loading...');
+            try {
+                const response = await fetch(`${API_BASE_URL}/patients/`);
+                if (!response.ok) throw new Error('Could not connect to the API server.');
+                const patients = await response.json();
+                
+                elements.patientListContainer.innerHTML = '';
+                if (patients.length === 0) {
+                    elements.patientListContainer.innerHTML = `<p class="p-4 text-center text-sm text-gray-500">Database is empty. Generate a patient.</p>`;
+                    elements.mainContent.innerHTML = `<div class="flex items-center justify-center h-full text-gray-500"><p>No patients loaded.</p></div>`;
+                } else {
+                    const list = document.createElement('ul');
+                    patients.forEach(p => {
+                        const li = document.createElement('li');
+                        li.className = `px-4 py-3 border-l-4 border-transparent hover:bg-gray-100 cursor-pointer`;
+                        li.dataset.patientId = p.id;
+                        li.textContent = p.name;
+                        list.appendChild(li);
+                    });
+                    elements.patientListContainer.appendChild(list);
+                    // Automatically select the first patient
+                    fetchAndRenderPatientDetails(patients[0].id);
+                }
+                hideStatus();
+            } catch (error) {
+                showStatus(`<strong>Error:</strong> ${error.message}`, true);
+            }
+        }
+
+        function renderPatientDetails(patient) {
+            const carePlanHtml = Object.entries(patient.carePlan).map(([key, value]) => {
+                if (key === 'lastUpdated') return '';
+                const label = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+                return `<div class="grid grid-cols-3 gap-4 mb-2 text-sm">
+                            <span class="font-semibold text-gray-600">${label}</span>
+                            <span class="col-span-2 text-gray-800">${value}</span>
+                        </div>`;
+            }).join('');
+
+            const notesHtml = patient.notes.map(note => `
+                <div class="mb-4 border-b pb-4 last:border-b-0">
+                    ${Object.entries(note).map(([key, value]) => {
+                        if (key === 'updated' || !value) return '';
+                        return `<div class="grid grid-cols-3 gap-2 text-sm mb-1">
+                                    <span class="font-semibold text-gray-600 capitalize">${key}</span>
+                                    <span class="col-span-2 text-gray-800">${value}</span>
+                                </div>`;
+                    }).join('')}
+                    ${note.updated ? `<p class="text-xs text-gray-400 mt-2">${note.updated}</p>` : ''}
+                </div>`).join('');
+
+            const careTeamHtml = patient.careTeam.map(member => `
+                <div class="flex items-center mb-3">
+                    <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center mr-3"></div>
+                    <div>
+                        <p class="font-semibold text-sm text-gray-800">${member.name}</p>
+                        <p class="text-xs text-gray-500">${member.role}</p>
+                    </div>
+                </div>`).join('');
+
+            const toDoHtml = patient.toDo.map(item => `
+                <div class="flex items-center justify-between mb-2 text-sm">
+                    <div class="flex items-center">
+                        <input type="checkbox" ${item.completed ? 'checked' : ''} disabled class="mr-3 form-checkbox h-4 w-4 text-blue-600 rounded" />
+                        <span class="${item.completed ? 'line-through text-gray-500' : 'text-gray-800'}">${item.text}</span>
+                    </div>
+                    ${renderBadge(item.priority, item.priority)}
+                </div>`).join('');
+
+            const a1cListHtml = patient.a1cData.map(d => `<li>${d.name}: <strong>${d.a1c}</strong></li>`).join('');
+
+            elements.mainContent.innerHTML = `
+                <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">${patient.name}</h1>
+                        <p class="text-sm text-gray-600">${patient.details}</p>
+                    </div>
+                </header>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h2 class="text-xl font-bold text-gray-800 mb-4">Care Plan</h2>
+                                ${carePlanHtml}
+                                <p class="text-xs text-gray-400 mt-4">${patient.carePlan.lastUpdated}</p>
+                            </div>
+                            <div class="bg-white rounded-lg shadow p-6">
+                                <h2 class="text-xl font-bold text-gray-800 mb-4">A1C History</h2>
+                                <ul class="list-disc list-inside space-y-1 text-sm">${a1cListHtml}</ul>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h2 class="text-xl font-bold text-gray-800 mb-4">Notes</h2>
+                            ${notesHtml}
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-6">
+                            <h2 class="text-xl font-bold text-gray-800 mb-4">Care Team</h2>
+                            ${careTeamHtml}
+                        </div>
+                    </div>
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-lg shadow p-6">
+                             <h2 class="text-xl font-bold text-gray-800 mb-4">To Do</h2>
+                             ${toDoHtml}
+                             <p class="text-xs text-gray-500 mt-4">${patient.toDo.filter(i => i.completed).length} COMPLETED</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function fetchAndRenderPatientDetails(patientId) {
+            document.querySelectorAll('#patient-list-container li').forEach(li => li.classList.remove('selected'));
+            document.querySelector(`li[data-patient-id="${patientId}"]`).classList.add('selected');
+
+            elements.mainContent.innerHTML = '<div class="flex justify-center items-center h-full"><div class="spinner"></div></div>';
+            try {
+                const response = await fetch(`${API_BASE_URL}/patients/${patientId}`);
+                if (!response.ok) throw new Error('Failed to fetch patient details.');
+                const patient = await response.json();
+                renderPatientDetails(patient);
+            } catch (error) {
+                elements.mainContent.innerHTML = `<p class="text-red-500 p-8">${error.message}</p>`;
+            }
+        }
+
+        elements.generateButton.addEventListener('click', async () => {
+            elements.generateButton.disabled = true;
+            showStatus('<div class="spinner"></div> Generating & saving...');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/generate-patients/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ num_patients: 1 }), // Generate one at a time for simplicity
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Generation failed.');
+                }
+                await fetchAndRenderPatientList();
+                showStatus(`Successfully generated 1 new patient.`);
+            } catch (error) {
+                showStatus(`<strong>Error:</strong> ${error.message}`, true);
+            } finally {
+                elements.generateButton.disabled = false;
+            }
+        });
+
+        elements.patientListContainer.addEventListener('click', (e) => {
+            if (e.target.tagName === 'LI' && e.target.dataset.patientId) {
+                fetchAndRenderPatientDetails(e.target.dataset.patientId);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', fetchAndRenderPatientList);
+    </script>
+</body>
+</html>
