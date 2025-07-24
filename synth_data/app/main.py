@@ -6,7 +6,7 @@ import json
 
 from app.models import GenerationRequest, CliniversePatient
 from app.agent import app_graph, AgentState
-from synth.synth_data.app.database import (
+from app.database import (
     init_db, 
     get_all_patients_from_db, 
     get_patient_details_from_db,
