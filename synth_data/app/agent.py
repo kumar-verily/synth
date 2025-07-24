@@ -19,7 +19,7 @@ from app.models import (
     PatientPersona as PydanticPatientPersona, 
     CliniversePatient
 )
-from app.database import add_patient_to_db
+from synth.synth_data.app.database_old import add_patient_to_db
 
 # --- Agent State ---
 class AgentState(TypedDict):
