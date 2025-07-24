@@ -1,0 +1,10 @@
+fastapi[all]
+langchain-openai>=0.1.0
+langgraph>=0.0.30
+langchain-core>=0.1.27
+pydantic
+python-dotenv
+pandas
+numpy
+psycopg2-binary
+sqlalchemy
