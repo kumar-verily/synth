@@ -2,7 +2,7 @@ import os
 import uuid
 import re
 import json
-from typing import TypedDict, List, Dict
+from typing import TypedDict, List, Dict, Optional
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import Field
@@ -30,7 +30,8 @@ class AgentState(TypedDict):
     persona: dict
     journey_log: List[dict]
     # Final, formatted data
-    cliniverse_patient: Dict 
+    cliniverse_patient: Dict
+    profile_name: Optional[str] 
 
 # --- LLM and Tools Setup ---
 from dotenv import load_dotenv
@@ -83,6 +84,10 @@ def formatter_agent(state: AgentState):
     """
     print("--- 4. UI FORMATTER AGENT ---")
     
+    if state.get("profile_name"):
+        print(f"Using profile name: {state['profile_name']}")
+        profile_json["profile_name"] = state.get("profile_name")
+
     context = f"""
     Raw Patient Data:
     - Patient ID: {state['patient_id']}
