@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field 
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 # --- Original Agent Models (used for intermediate steps) ---
 
@@ -27,7 +27,12 @@ class SyntheticPatient(BaseModel):
 
 class GenerationRequest(BaseModel):
     num_patients: int = Field(default=1, gt=0, le=50, description="Number of synthetic patients to generate.")
+    profile: Optional[Dict] = None
+    profile_name: Optional[str] = 'default'
 
+class PopulationProfile(BaseModel):
+    name: str = Field(description="The unique name of the population profile.")
+    data: dict = Field(description="The JSON data containing the profile's statistics and co-morbidities.")
 
 # --- NEW: Models for Cliniverse UI ---
 # These models match the structure of the detailed patient view UI.
@@ -90,4 +95,5 @@ class CliniversePatient(BaseModel):
     notes: List[Note]
     careTeam: List[CareTeamMember]
     messages: List[Message]
+    profile_name: Optional[str] = Field(None, description="The name of the population profile used for generation.")
     # Surveys can be added here if needed in the future.
