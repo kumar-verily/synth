@@ -2,9 +2,7 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import Chart from 'chart.js/auto';
 
 // --- Configuration ---
-// const API_BASE_URL = "http://127.0.0.1:8000";
-const API_BASE_URL = "https://synth-production.up.railway.app";
-
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 // --- Embedded CSS Styles ---
 const styles = `
@@ -195,8 +193,8 @@ const CarePathway = () => {
     return (
         <div className="pathway-container">
             <header className="pathway-header">
-                <h1 className="pathway-title">Chronic Care Program Pathway (Template)</h1>
-                <p className="pathway-subtitle">An interactive and editable Care Pathway</p>
+                <h1 className="pathway-title">Chronic Care Program Pathway T1D (A1C > 10%)</h1>
+                <p className="pathway-subtitle">An interactive and editable guide to team responsibilities.</p>
             </header>
 
             <div className="pathway-grid-container">
@@ -713,7 +711,7 @@ export default function App() {
                         </div>
                         <div className="card">
                             <h2 className="card-title">Messages</h2>
-                            {patientToDisplay && patientToDisplay.messages && patientToDisplay.messages.map((msg, index) => (
+                            {patientToDisplay.messages && patientToDisplay.messages.map((msg, index) => (
                                 <div key={index} className="message-item">
                                     <div className="message-header">
                                         <div>
