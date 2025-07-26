@@ -3,14 +3,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import List
 import asyncio
 import json
+import re
 
-from app.models import GenerationRequest, CliniversePatient
-from app.agent import app_graph, AgentState
+from app.models import GenerationRequest, CliniversePatient, PopulationProfile # Import the necessary models
+from app.agent import app_graph, AgentState, llm
 from app.database import (
     init_db, 
     get_all_patients_from_db, 
     get_patient_details_from_db,
-    update_patient_in_db # Import the new function
+    update_patient_in_db,
+    add_population_profile_to_db,
+    get_all_population_profiles_from_db  
 )
 
 app = FastAPI(
@@ -74,3 +77,69 @@ async def update_patient_endpoint(patient_id: str, patient_data: CliniversePatie
         print(f"Error updating patient: {e}")
         raise HTTPException(status_code=500, detail="Failed to update patient data.")
 
+@app.post("/generate-patients/", response_model=List[CliniversePatient])
+async def generate_patients_endpoint(request: GenerationRequest):
+    """Generates a specified number of synthetic patients based on a profile."""
+    # Pass the profile into the agent invocation
+    tasks = [app_graph.ainvoke({"profile": request.profile,
+                                "profile_name": request.profile_name
+                                }) for _ in range(request.num_patients)]
+    generated_states: List[AgentState] = await asyncio.gather(*tasks)
+    final_patients = [state['cliniverse_patient'] for state in generated_states if 'cliniverse_patient' in state]
+    return final_patients
+
+
+@app.get("/population-stats/{condition}")
+async def get_population_stats(condition: str):
+    """
+    Gets population statistics for a given condition from OpenAI.
+    """
+    prompt = f"""
+    Provide population statistics and common co-morbidities for "{condition}" in the US.
+    Return a single, valid JSON object and nothing else.
+
+    **Critical Requirement:** The JSON object MUST include all of the following keys, even if data is estimated:
+    "genderDistribution", "ageDistribution", "raceEthnicityDistribution", "insuranceDistribution", "educationDistribution", "incomeDistribution", "geographicDistribution", "commonComorbidities"
+
+    **JSON Structure:**
+    - "genderDistribution": {{"male": %, "female": %}}
+    - "ageDistribution": {{"0-17": %, "18-44": %, "45-64": %, "65+": %}}
+    - "raceEthnicityDistribution": {{"White": %, "Black or African American": %, "Hispanic or Latino": %, "Asian": %, "Other": %}}
+    - "insuranceDistribution": {{"Private": %, "Medicare": %, "Medicaid": %, "Uninsured": %}}
+    - "educationDistribution": {{"Less than High School": %, "High School Graduate": %, "Some College": "Bachelor's or Higher": %}}
+    - "incomeDistribution": {{"Below Poverty": %, "Low Income": %, "Middle Income": %, "High Income": %}}
+    - "geographicDistribution": {{"Urban": %, "Suburban": %, "Rural": %}}
+    - "commonComorbidities": ["Hypertension", "Hyperlipidemia", "Obesity", "Anxiety"]
+
+    Ensure the percentages for each category sum to 100. Provide realistic, data-informed estimates.
+    """
+    
+    response = llm.invoke(prompt)
+    try:
+        # FIX: Clean the string before parsing
+        json_str = response.content
+        
+        # Use regex to find the JSON content between the markdown fences
+        match = re.search(r'```json\s*(\{.*?\})\s*```', json_str, re.DOTALL)
+        if match:
+            json_str = match.group(1)
+        
+        # As a fallback, strip whitespace and backticks if regex fails
+        json_str = json_str.strip().strip('`').strip()
+
+        return json.loads(json_str)
+
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail=f"Failed to parse JSON from LLM response {response.content}")
+
+
+@app.post("/population-profiles/", status_code=201)
+async def create_population_profile(profile: PopulationProfile):
+    """Saves a new population profile to the database."""
+    add_population_profile_to_db(profile.name, profile.data)
+    return {"message": f"Profile '{profile.name}' saved successfully."}
+
+@app.get("/population-profiles/", response_model=List[PopulationProfile])
+async def list_population_profiles_endpoint():
+    """Returns a list of all saved population profiles."""
+    return get_all_population_profiles_from_db()
