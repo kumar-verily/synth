@@ -5,6 +5,7 @@ import Chart from 'chart.js/auto';
 // const API_BASE_URL = "http://127.0.0.1:8000";
 const API_BASE_URL = "https://synth-production.up.railway.app";
 
+
 // --- Embedded CSS Styles ---
 const styles = `
     .app-container { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
