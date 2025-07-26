@@ -203,8 +203,8 @@ const CarePathway = () => {
     return (
         <div className="pathway-container">
             <header className="pathway-header">
-                <h1 className="pathway-title">Chronic Care Program Pathway T1D (A1C > 10%)</h1>
-                <p className="pathway-subtitle">An interactive and editable guide to team responsibilities.</p>
+                <h1 className="pathway-title">Chronic Care Program Pathway (Template)</h1>
+                <p className="pathway-subtitle">An interactive and editable guide to Care Pathways</p>
             </header>
 
             <div className="pathway-grid-container">
