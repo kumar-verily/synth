@@ -12,6 +12,13 @@ def init_db():
             CREATE TABLE IF NOT EXISTS patients (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
+                data TEXT NOT NULL,
+                profile_name TEXT
+            )
+        ''')
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS population_profiles (
+                name TEXT PRIMARY KEY,
                 data TEXT NOT NULL
             )
         ''')
@@ -23,11 +30,12 @@ def add_patient_to_db(patient_data: Dict):
     with sqlite3.connect(DB_FILE) as con:
         cur = con.cursor()
         cur.execute(
-            "INSERT OR REPLACE INTO patients (id, name, data) VALUES (?, ?, ?)",
+            "INSERT OR REPLACE INTO patients (id, name, data, profile_name) VALUES (?, ?, ?, ?)",
             (
                 patient_data['id'],
                 patient_data['name'],
-                patient_json
+                patient_json,
+                patient_data.get('profile_name', 'default')
             )
         )
     print(f"Saved patient {patient_data['name']} to DB.")
@@ -53,7 +61,7 @@ def get_all_patients_from_db() -> List[Dict]:
     with sqlite3.connect(DB_FILE) as con:
         con.row_factory = sqlite3.Row
         cur = con.cursor()
-        cur.execute("SELECT id, name FROM patients")
+        cur.execute("SELECT id, name, profile_name FROM patients")
         patients = [dict(row) for row in cur.fetchall()]
     return patients
 
@@ -64,3 +72,29 @@ def get_patient_details_from_db(patient_id: str) -> Optional[Dict]:
         cur.execute("SELECT data FROM patients WHERE id = ?", (patient_id,))
         row = cur.fetchone()
         return json.loads(row[0]) if row else None
+
+def add_population_profile_to_db(name: str, data: Dict):
+    """Adds or replaces a population profile in the database."""
+    profile_json = json.dumps(data)
+    with sqlite3.connect(DB_FILE) as con:
+        cur = con.cursor()
+        cur.execute(
+            "INSERT OR REPLACE INTO population_profiles (name, data) VALUES (?, ?)",
+            (name, profile_json)
+        )
+    print(f"Saved population profile '{name}' to DB.")
+
+
+def get_all_population_profiles_from_db() -> List[Dict]:
+    """Retrieves all population profiles from the database."""
+    profiles = []
+    with sqlite3.connect(DB_FILE) as con:
+        con.row_factory = sqlite3.Row
+        cur = con.cursor()
+        cur.execute("SELECT name, data FROM population_profiles")
+        for row in cur.fetchall():
+            profiles.append({
+                "name": row["name"],
+                "data": json.loads(row["data"])
+            })
+    return profiles
