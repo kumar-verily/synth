@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import Chart from 'chart.js/auto';
 
 // --- Configuration ---
-const API_BASE_URL = "http://127.0.0.1:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
+const API_BASE_URL = "https://synth-production.up.railway.app"
 
 // --- Embedded CSS Styles ---
 const styles = `
