@@ -97,3 +97,7 @@ class CliniversePatient(BaseModel):
     messages: List[Message]
     profile_name: Optional[str] = Field(None, description="The name of the population profile used for generation.")
     # Surveys can be added here if needed in the future.
+
+class ChatRequest(BaseModel):
+    user_prompt: str
+    patient: Optional[dict] = None # Make patient optional and default to None

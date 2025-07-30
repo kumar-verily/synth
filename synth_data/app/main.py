@@ -5,7 +5,7 @@ import asyncio
 import json
 import re
 
-from app.models import GenerationRequest, CliniversePatient, PopulationProfile # Import the necessary models
+from app.models import GenerationRequest, CliniversePatient, PopulationProfile, ChatRequest   # Import the necessary models
 from app.agent import app_graph, AgentState, llm
 from app.database import (
     init_db, 
@@ -13,7 +13,7 @@ from app.database import (
     get_patient_details_from_db,
     update_patient_in_db,
     add_population_profile_to_db,
-    get_all_population_profiles_from_db  
+    get_all_population_profiles_from_db
 )
 
 app = FastAPI(
@@ -143,3 +143,33 @@ async def create_population_profile(profile: PopulationProfile):
 async def list_population_profiles_endpoint():
     """Returns a list of all saved population profiles."""
     return get_all_population_profiles_from_db()
+
+from langchain_openai import ChatOpenAI
+llm = ChatOpenAI(model="gpt-4o", temperature=0.7)
+@app.post("/chat")
+async def chat_with_patient_data(request: ChatRequest):
+    """Handles chat requests by loading a system prompt from a file."""
+    try:
+        # 1. Read the prompt template from the file
+        with open('chat_prompt.txt', 'r') as f:
+            prompt_template = f.read()
+
+        print(f"Loaded prompt template: {prompt_template[:100]}...")  # Debugging line to check the template
+        # 2. Format the template with the patient data from the request
+        print(f"Patient data: {request.patient}")  # Debugging line to check the 
+        patient_json_string = json.dumps(request.patient, indent=2)
+        system_prompt = prompt_template.replace('{patient_data}', patient_json_string)
+
+        # 3. Call the LLM with the formatted prompt
+        messages = [
+            ("system", system_prompt),
+            ("user", request.user_prompt)
+        ]
+        response = llm.invoke(messages)
+
+        return {"response": response.content}
+        
+    except FileNotFoundError:
+        raise HTTPException(status_code=500, detail="chat_prompt.txt not found.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
