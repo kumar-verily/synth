@@ -5,7 +5,7 @@ import asyncio
 import json
 import re
 
-from app.models import GenerationRequest, CliniversePatient, PopulationProfile, ChatRequest   # Import the necessary models
+from app.models import GenerationRequest, CliniversePatient, PopulationProfile, ChatRequest, AdviceRequest   # Import the necessary models
 from app.agent import app_graph, AgentState, llm
 from app.database import (
     init_db, 
@@ -173,3 +173,21 @@ async def chat_with_patient_data(request: ChatRequest):
         raise HTTPException(status_code=500, detail="chat_prompt.txt not found.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.post("/api/behavioral-advice")
+async def get_behavioral_advice(request: AdviceRequest):
+    """
+    Generates behavioral change advice using an LLM based on a prompt.
+    """
+    try:
+        full_prompt = ""
+        if request.is_for_provider:
+            full_prompt = f"""A patient is struggling with this: "{request.prompt}". As a behavioral change coach, provide 3 distinct, ranked suggestions based on the BeST framework. For each suggestion, provide: 1. The core advice for the patient (as a single paragraph). 2. The primary Barrier it addresses. 3. The main Strategy used. 4. The key Tactic applied. Format each suggestion starting with "SUGGESTION:", followed by "ADVICE:", "BARRIER:", "STRATEGY:", and "TACTIC:" on new lines."""
+        else:
+            full_prompt = f"""As a behavioral change coach, provide concise, actionable advice for the following user question: "{request.prompt}". Use the BeST framework (Barriers, Strategies, Tactics) to structure your answer if applicable. Use markdown for formatting (bolding with **, lists with *)."""
+
+        response = llm.invoke(full_prompt)
+        return {"advice": response.content}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error during LLM call: {str(e)}")

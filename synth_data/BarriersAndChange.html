@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Behavioral Change Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
+        .sidebar { background-color: #0d4742; }
+        .main-content { background-color: #f4f4f2; }
+        .nav-button { transition: all 0.2s ease-in-out; }
+        .nav-button.active { background-color: #e0e0e0; color: #1a202c; font-weight: 600; }
+        .strategy-circle { width: 100px; height: 100px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; font-size: 12px; cursor: pointer; transition: all 0.2s ease-in-out; background-color: #d1d5db; color: #1f2937; border: 2px solid transparent; }
+        .strategy-circle.active { background-color: #10b981; color: white; transform: scale(1.1); border-color: #059669; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #aiResponse.loading::after, #providerSuggestions.loading::after { content: 'Thinking...'; display: block; text-align: center; margin-top: 1rem; color: #6b7280; }
+        .tab-button.active { border-bottom-color: #10b981; color: #10b981; font-weight: 600; }
+        .chat-box::-webkit-scrollbar { width: 6px; }
+        .chat-box::-webkit-scrollbar-track { background: #f1f1f1; }
+        .chat-box::-webkit-scrollbar-thumb { background: #888; border-radius: 3px;}
+        .chat-box::-webkit-scrollbar-thumb:hover { background: #555; }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Main Tab Navigation -->
+    <div class="bg-white shadow-md">
+        <nav class="flex justify-center -mb-px">
+            <button data-tab="best-framework" class="tab-button py-4 px-6 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none active">BeST Framework</button>
+            <button data-tab="chat-interface" class="tab-button py-4 px-6 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none">Chat Interface</button>
+        </nav>
+    </div>
+
+    <!-- Tab Content -->
+    <div id="tab-content" class="h-[calc(100vh-57px)]">
+        <!-- BeST Framework Tab -->
+        <div id="best-framework-content">
+            <div id="app" class="flex h-full">
+                <!-- Left Sidebar -->
+                <aside class="sidebar w-1/4 text-white p-6 flex flex-col overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                         <h2 class="text-xl font-bold">Goal Setting</h2>
+                         <button id="clearBtn" title="Clear Selections" class="text-teal-300 hover:text-white transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 4l16 16" /></svg></button>
+                    </div>
+                    <div class="space-y-2">
+                        <input type="text" id="goalInputSidebar" class="w-full px-3 py-2 bg-teal-700 border border-teal-600 rounded-lg placeholder-teal-300 text-white focus:outline-none focus:ring-2 focus:ring-teal-400" placeholder="e.g., Exercise 3x a week">
+                        <button id="setGoalBtn" class="w-full text-center bg-teal-500 hover:bg-teal-600 p-2 rounded-lg nav-button font-semibold">Set My Goal</button>
+                    </div>
+                    <div class="mt-8 flex-grow"><h2 class="text-xl font-bold mb-4">Barriers</h2><div id="barriersList" class="space-y-2"></div></div>
+                    <div id="detailsBox" class="mt-auto bg-teal-800 p-4 rounded-lg hidden fade-in flex-shrink-0">
+                        <h3 id="detailsStrategy" class="font-bold text-lg text-teal-300">Strategy</h3>
+                        <div class="mt-2"><h4 class="font-semibold text-teal-400">Tactics:</h4><ul id="detailsTactics" class="list-disc list-inside text-sm mt-1 space-y-1"></ul></div>
+                    </div>
+                </aside>
+
+                <!-- Main Content -->
+                <main class="main-content w-3/4 p-8 overflow-y-auto">
+                    <h1 id="goalDisplay" class="text-3xl font-bold text-gray-700 mb-6 text-center hidden"></h1>
+                    <div class="mb-8 p-6 bg-white rounded-xl shadow-sm">
+                         <h2 class="text-xl font-bold text-gray-700 mb-3">Ask for Advice</h2>
+                         <div class="flex space-x-2">
+                            <input type="text" id="aiQuestionInput" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500" placeholder="e.g., How can I stay motivated to exercise?">
+                            <button id="askAiBtn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-transform transform hover:scale-105">Ask</button>
+                         </div>
+                         <div id="aiResponse" class="mt-4 p-4 bg-gray-50 rounded-lg min-h-[50px] text-gray-800"><p class="text-gray-500">Your personalized advice will appear here.</p></div>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-center mb-6">Strategies/Tactics</h2>
+                        <div id="strategiesGrid" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-x-4 gap-y-8 justify-items-center"></div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <!-- Chat Interface Tab -->
+        <div id="chat-interface-content" class="hidden h-full">
+            <div class="flex h-full">
+                <!-- Patient View -->
+                <div class="w-1/2 border-r border-gray-200 flex flex-col p-4 bg-white">
+                    <h2 class="text-2xl font-bold text-center mb-4 text-gray-700">Patient Chat</h2>
+                    <div id="patientChatBox" class="chat-box flex-grow bg-gray-50 rounded-lg p-4 overflow-y-auto space-y-4">
+                        <div class="flex justify-start"><div class="bg-gray-200 text-gray-800 p-3 rounded-lg max-w-xs">Hello! How can I help you today?</div></div>
+                    </div>
+                    <div class="mt-4 flex">
+                        <input type="text" id="patientInput" class="flex-grow border border-gray-300 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-teal-500" placeholder="Type your message...">
+                        <button id="sendPatientMessageBtn" class="bg-teal-500 hover:bg-teal-600 text-white font-bold p-3 rounded-r-lg">Send</button>
+                    </div>
+                </div>
+
+                <!-- Provider View -->
+                <div class="w-1/2 flex flex-col p-4 bg-gray-100">
+                    <h2 class="text-2xl font-bold text-center mb-4 text-gray-700">Provider Dashboard</h2>
+                    <div class="flex-grow flex flex-col overflow-hidden">
+                        <h3 class="font-bold text-lg mb-2 flex-shrink-0">Conversation History</h3>
+                        <div id="providerChatHistory" class="chat-box flex-grow bg-white rounded-lg p-4 overflow-y-auto space-y-4 mb-4 shadow-inner">
+                             <div class="flex justify-start"><div class="bg-gray-200 text-gray-800 p-3 rounded-lg max-w-xs">Hello! How can I help you today?</div></div>
+                        </div>
+                        <div id="providerWorkspace" class="hidden flex-shrink-0">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-bold text-lg">AI-Generated Suggestions</h3>
+                                <label class="flex items-center cursor-pointer">
+                                    <span class="text-sm font-medium text-gray-700 mr-2">Auto-Respond</span>
+                                    <div class="relative">
+                                        <input type="checkbox" id="autoRespondToggle" class="sr-only">
+                                        <div class="block bg-gray-300 w-10 h-6 rounded-full"></div>
+                                        <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition"></div>
+                                    </div>
+                                </label>
+                            </div>
+                            <div id="providerSuggestions" class="space-y-3 max-h-48 overflow-y-auto"></div>
+                            <button id="shareSelectedBtn" class="mt-2 w-full bg-green-600 hover:bg-green-700 text-white font-bold p-2 rounded-lg shadow-md hidden">Share Selected</button>
+                        </div>
+                        <div class="mt-auto pt-4 border-t border-gray-200 flex-shrink-0">
+                             <h3 class="font-bold text-lg mb-2">Direct Message to Patient</h3>
+                             <div class="flex">
+                                <input type="text" id="providerInput" class="flex-grow border border-gray-300 rounded-l-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Type a direct message...">
+                                <button id="sendProviderMessageBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-r-lg">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        const frameworkData = [
+            { barrier: "Poor self-efficacy", strategies: ["Self talk", "Future focus priming", "Anchoring", "Increase self efficacy"], tactics: ["Positive Self talk", "Mental rehearsal of successful performance", "Future self", "Anchor in past success"] },
+            { barrier: "Present bias", strategies: ["Natural consequences", "Values reflection", "Future focus priming", "Cognitive re-structuring", "Framing"], tactics: ["Offer the user info about health consequences", "Offer the user info about emotional and physical consequences", "Implementation intentions", "Distraction", "Big picture connection + positive self talk"] },
+            { barrier: "Don't know the basics", strategies: ["Learning support", "Heuristics", "Goals and planning"], tactics: ["Learning support", "Rules of thumb", "Implementation intentions"] },
+            { barrier: "Don't know the consequences", strategies: ["Natural consequences"], tactics: ["Offer the user info about health consequences", "Offer the user info about emotional and physical consequences", "Regret aversion"] },
+            { barrier: "Geographic limitations", strategies: ["Behavioral substitutes", "Problem solving"], tactics: ["Offer alternative geographic options", "Problem solving"] },
+            { barrier: "Affordability/costs", strategies: ["Behavioral substitutes", "Perceived value"], tactics: ["Offer cheaper alternatives", "Strategies to replace the item", "Price is same as unhealthy item"] },
+            { barrier: "Ostrich effect", strategies: ["Framing", "Social Proof", "Positive reinforcement", "Self talk"], tactics: ["Normalize setbacks and celebrate small wins", "Send notification starting with positive", "Positive self talk"] },
+            { barrier: "Planning fallacy", strategies: ["Goals and planning"], tactics: ["Implementation intentions", "SMART Goals"] },
+            { barrier: "Lack of social support", strategies: ["Social proof"], tactics: ["Social norms (majority/positive)", "Send positive notifications", "Buddy tactic", "Pygmalion effect"] },
+            { barrier: "Switching settings", strategies: ["Substitution", "Heuristics", "Self-talk", "Future focus priming", "Reminders and Gamification"], tactics: ["Offer alternative options", "Implementation intentions", "Future self", "Reminder + streaks"] },
+            { barrier: "Limited time", strategies: ["Substitution", "Heuristics", "Planning", "Commitment + behavioral contract"], tactics: ["Offer alternative, easier and faster options", "Break consuming tasks into shorter/smaller ones", "Encourage to commit to desired behavior"] },
+            { barrier: "Skepticism", strategies: ["Comparison of outcomes", "Belief about consequences", "Incentive", "Social norms"], tactics: ["Credible source + edu through stats", "Social norms (majority/positive)"] },
+            { barrier: "Spotlight effect", strategies: ["Natural consequences", "Cognitive re-structuring", "Increase self efficacy", "Values reflection", "Incentive"], tactics: ["Info about social consequences", "Build worst case scenarios", "Positive self talk"] },
+            { barrier: "Anchoring effect", strategies: ["Problem solving", "Reframing", "Temporal landmark"], tactics: ["Problem solve + counterfactual", "Anchor in past success"] },
+            { barrier: "Decision paralysis", strategies: ["Heuristics"], tactics: ["Offer alternative (faster) options", "Default", "Omission bias"] },
+            { barrier: "Physical limitations", strategies: ["Behavioral substitutes"], tactics: ["Offer alternative (healthier) options", "Modeling"] },
+            { barrier: "Cognitive dissonance", strategies: ["Identity"], tactics: ["Challenge existing beliefs + fresh start effect", "Identification of self as a role model", "Messenger effect"] },
+            { barrier: "Shame", strategies: ["Natural consequences", "Cognitive re-structuring", "Values reflection"], tactics: ["Info about social consequences", "Values reflection", "Story based modelling"] },
+            { barrier: "Decision fatigue", strategies: ["Heuristics", "Increase self efficacy", "Planning", "Cognitive re-structuring", "Goal setting", "Natural consequences"], tactics: ["Make goals easy", "Own goal setting", "Credible source"] },
+            { barrier: "Competing priorities", strategies: ["Cognitive re-structuring", "Framing"], tactics: ["Sunk cost + loss aversion", "Regret aversion", "Reframing"] },
+            { barrier: "Lack of trust", strategies: ["Modeling", "Comparison of outcomes"], tactics: ["Credible source", "Make goals easy", "Credible source"] },
+            { barrier: "Lack of goal ownership", strategies: ["Ikea effect", "Self talk", "Future focus priming", "Natural consequences", "Self-reward"], tactics: ["Well-placed reminder", "Create acronyms + mental associations", "Big picture connection + positive self talk", "Offer alternative, easier and faster options"] },
+            { barrier: "Memory", strategies: ["Reminders"], tactics: ["Reminders from others + buddy tactic", "Object placement", "Timely notifications"] },
+            { barrier: "Lack of desire without reason", strategies: ["Temptation bundling", "Identity", "Self talk", "Future focus priming", "Natural consequences", "Self-reward"], tactics: ["Anchor in past success", "Problem solving"] },
+            { barrier: "Gut feelings", strategies: ["Problem solving"], tactics: ["Problem solving"] },
+            { barrier: "Lack of equipment", strategies: ["Problem solving"], tactics: ["Offer alternative, easier creative strategies to replace stuff"] },
+            { barrier: "Impact on others", strategies: ["Behavioral substitution"], tactics: ["Offer alternative, easier creative strategies to replace stuff"] },
+            { barrier: "Boredom", strategies: ["Framing", "Self talk", "Positive reinforcement"], tactics: ["Normalize setbacks and celebrate small wins", "Send notification starting with positive", "Positive self talk"] }
+        ];
+        const allStrategies = [...new Set(frameworkData.flatMap(item => item.strategies))].sort();
+
+        // --- DOM ELEMENTS ---
+        const bestFrameworkContent = document.getElementById('best-framework-content');
+        const chatInterfaceContent = document.getElementById('chat-interface-content');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const barriersList = document.getElementById('barriersList');
+        const detailsBox = document.getElementById('detailsBox');
+        const detailsStrategy = document.getElementById('detailsStrategy');
+        const detailsTactics = document.getElementById('detailsTactics');
+        const strategiesGrid = document.getElementById('strategiesGrid');
+        const aiQuestionInput = document.getElementById('aiQuestionInput');
+        const askAiBtn = document.getElementById('askAiBtn');
+        const aiResponse = document.getElementById('aiResponse');
+        const goalInputSidebar = document.getElementById('goalInputSidebar');
+        const setGoalBtn = document.getElementById('setGoalBtn');
+        const goalDisplay = document.getElementById('goalDisplay');
+        const clearBtn = document.getElementById('clearBtn');
+        const patientChatBox = document.getElementById('patientChatBox');
+        const patientInput = document.getElementById('patientInput');
+        const sendPatientMessageBtn = document.getElementById('sendPatientMessageBtn');
+        const providerChatHistory = document.getElementById('providerChatHistory');
+        const providerWorkspace = document.getElementById('providerWorkspace');
+        const providerSuggestions = document.getElementById('providerSuggestions');
+        const autoRespondToggle = document.getElementById('autoRespondToggle');
+        const providerInput = document.getElementById('providerInput');
+        const sendProviderMessageBtn = document.getElementById('sendProviderMessageBtn');
+        const shareSelectedBtn = document.getElementById('shareSelectedBtn');
+
+        // --- FUNCTIONS ---
+
+        function markdownToHtml(text) {
+            const lines = text.split('\n');
+            let html = '';
+            let inList = false;
+            for (let line of lines) {
+                const trimmedLine = line.trim();
+                if (trimmedLine.startsWith('* ')) {
+                    if (!inList) { html += '<ul class="list-disc list-inside space-y-1 my-2">'; inList = true; }
+                    let listItem = trimmedLine.substring(2);
+                    listItem = listItem.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    html += `<li>${listItem}</li>`;
+                } else {
+                    if (inList) { html += '</ul>'; inList = false; }
+                    if (trimmedLine) {
+                        let paragraph = trimmedLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                        html += `<p class="my-2">${paragraph}</p>`;
+                    }
+                }
+            }
+            if (inList) { html += '</ul>'; }
+            return html;
+        }
+
+        function initializeBarriers() {
+            barriersList.innerHTML = '';
+            frameworkData.forEach(item => {
+                const button = document.createElement('button');
+                button.className = 'w-full text-left p-3 rounded-lg nav-button text-teal-200 hover:bg-teal-700';
+                button.textContent = item.barrier;
+                button.dataset.barrier = item.barrier;
+                button.addEventListener('click', () => handleBarrierClick(item, button));
+                barriersList.appendChild(button);
+            });
+        }
+        
+        function initializeStrategies() {
+            strategiesGrid.innerHTML = '';
+            allStrategies.forEach(strategy => {
+                const circle = document.createElement('div');
+                circle.className = 'strategy-circle';
+                circle.textContent = strategy;
+                circle.dataset.strategy = strategy;
+                strategiesGrid.appendChild(circle);
+            });
+        }
+
+        function handleBarrierClick(barrierData, buttonElement) {
+            document.querySelectorAll('#barriersList .nav-button').forEach(btn => btn.classList.remove('active'));
+            buttonElement.classList.add('active');
+            detailsStrategy.textContent = `${barrierData.barrier}`;
+            detailsTactics.innerHTML = barrierData.tactics.map(t => `<li>${t}</li>`).join('');
+            detailsBox.classList.remove('hidden');
+            document.querySelectorAll('.strategy-circle').forEach(circle => {
+                circle.classList.toggle('active', barrierData.strategies.includes(circle.dataset.strategy));
+            });
+        }
+        
+        function resetSelections() {
+            goalInputSidebar.value = '';
+            goalDisplay.classList.add('hidden');
+            document.querySelectorAll('#barriersList .nav-button, .strategy-circle').forEach(el => el.classList.remove('active'));
+            detailsBox.classList.add('hidden');
+            aiQuestionInput.value = '';
+            aiResponse.innerHTML = `<p class="text-gray-500">Your personalized advice will appear here.</p>`;
+        }
+
+        async function getLLMAdvice(prompt, isForProvider = false) {
+            // const apiUrl = 'https://synth-production.up.railway.app/api/behavioral-advice';
+            const apiUrl = 'http://127.0.0.1:8000/api/behavioral-advice';
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt, is_for_provider: isForProvider })
+                });
+                
+                // --- FIX: Improved Error Handling ---
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error(`API Error (404 Not Found): The endpoint at ${apiUrl} does not exist on your server. Please make sure you have added the '/api/behavioral-advice' endpoint to your main.py file.`);
+                    }
+                    const errData = await response.json().catch(() => ({ detail: `Server returned a non-JSON error status: ${response.status}` }));
+                    throw new Error(errData.detail || `Failed to get a response from the server. Status: ${response.status}`);
+                }
+                // --- END FIX ---
+
+                const data = await response.json();
+                return data.advice;
+            } catch (error) {
+                console.error("AI Error:", error);
+                throw error;
+            }
+        }
+        
+        function addMessageToChat(message, sender, source) {
+            const createMessageDiv = (bgColor, textColor, align) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = `flex ${align}`;
+                wrapper.innerHTML = `<div class="${bgColor} ${textColor} p-3 rounded-lg max-w-xs">${message}</div>`;
+                return wrapper;
+            };
+            let patientBubble, providerBubble;
+            if (sender === 'user') {
+                patientBubble = createMessageDiv('bg-teal-500', 'text-white', 'justify-end');
+                providerBubble = createMessageDiv('bg-teal-500', 'text-white', 'justify-end');
+            } else { // sender is 'provider'
+                const bgColor = source === 'provider' ? 'bg-blue-200' : 'bg-gray-200';
+                patientBubble = createMessageDiv(bgColor, 'text-gray-800', 'justify-start');
+                providerBubble = createMessageDiv(bgColor, 'text-gray-800', 'justify-start');
+            }
+            patientChatBox.appendChild(patientBubble);
+            providerChatHistory.appendChild(providerBubble);
+            patientChatBox.scrollTop = patientChatBox.scrollHeight;
+            providerChatHistory.scrollTop = providerChatHistory.scrollHeight;
+        }
+
+        function parseProviderSuggestions(text) {
+            return text.split('SUGGESTION:').slice(1).map(s => {
+                const adviceMatch = s.match(/ADVICE:([\s\S]*?)BARRIER:/);
+                const barrierMatch = s.match(/BARRIER:([\s\S]*?)STRATEGY:/);
+                const strategyMatch = s.match(/STRATEGY:([\s\S]*?)TACTIC:/);
+                const tacticMatch = s.match(/TACTIC:([\s\S]*)/);
+                return {
+                    advice: adviceMatch ? adviceMatch[1].trim().replace(/"/g, "&quot;") : "N/A",
+                    barrier: barrierMatch ? barrierMatch[1].trim() : "N/A",
+                    strategy: strategyMatch ? strategyMatch[1].trim() : "N/A",
+                    tactic: tacticMatch ? tacticMatch[1].trim() : "N/A",
+                };
+            });
+        }
+
+        async function handlePatientMessage() {
+            const message = patientInput.value.trim();
+            if (!message) return;
+            addMessageToChat(message, 'user');
+            patientInput.value = '';
+
+            providerWorkspace.classList.remove('hidden');
+            providerSuggestions.innerHTML = '';
+            shareSelectedBtn.classList.add('hidden');
+            providerSuggestions.classList.add('loading');
+            
+            try {
+                const rawSuggestions = await getLLMAdvice(message, true);
+                const suggestions = parseProviderSuggestions(rawSuggestions);
+                
+                providerSuggestions.classList.remove('loading');
+                if (suggestions.length === 0) {
+                    providerSuggestions.innerHTML = `<p class="text-gray-500">Could not generate suggestions. Please try again.</p>`;
+                    return;
+                }
+                
+                shareSelectedBtn.classList.remove('hidden');
+
+                if (autoRespondToggle.checked) {
+                    addMessageToChat(suggestions[0].advice, 'provider', 'ai');
+                    providerSuggestions.innerHTML = `<p class="text-green-600 font-semibold p-4 bg-green-100 rounded-lg">Top suggestion automatically sent to the patient.</p>`;
+                    shareSelectedBtn.classList.add('hidden');
+                } else {
+                    suggestions.forEach((s, index) => {
+                        const id = `suggestion-${Date.now()}-${index}`;
+                        const suggestionEl = document.createElement('div');
+                        suggestionEl.className = 'bg-white p-3 rounded-lg shadow-sm suggestion-card';
+                        suggestionEl.innerHTML = `
+                            <div class="flex items-start">
+                                <input type="checkbox" class="h-5 w-5 mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500 suggestion-checkbox">
+                                <div class="ml-3 flex-grow">
+                                    <div id="${id}-display"><p class="text-gray-800">${s.advice}</p></div>
+                                    <div id="${id}-edit" class="hidden"><textarea class="w-full p-2 border border-gray-300 rounded-md">${s.advice}</textarea></div>
+                                    <div class="mt-2 text-xs text-gray-500">
+                                        <span class="font-semibold">B:</span> ${s.barrier} | 
+                                        <span class="font-semibold">S:</span> ${s.strategy} | 
+                                        <span class="font-semibold">T:</span> ${s.tactic}
+                                    </div>
+                                </div>
+                                <button class="edit-btn text-xs font-semibold text-blue-600 hover:text-blue-800 ml-2 flex-shrink-0" data-target="${id}">Edit</button>
+                            </div>
+                        `;
+                        providerSuggestions.appendChild(suggestionEl);
+                    });
+                }
+            } catch (error) {
+                providerSuggestions.classList.remove('loading');
+                providerSuggestions.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+            }
+        }
+        
+        function handleProviderMessage() {
+            const message = providerInput.value.trim();
+            if (!message) return;
+            addMessageToChat(message, 'provider', 'provider');
+            providerInput.value = '';
+        }
+
+        // --- EVENT LISTENERS ---
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                bestFrameworkContent.classList.toggle('hidden', button.dataset.tab !== 'best-framework');
+                chatInterfaceContent.classList.toggle('hidden', button.dataset.tab !== 'chat-interface');
+            });
+        });
+
+        askAiBtn.addEventListener('click', async () => {
+            const prompt = aiQuestionInput.value.trim();
+            if (!prompt) return;
+            aiResponse.innerHTML = '';
+            aiResponse.classList.add('loading');
+            try {
+                const text = await getLLMAdvice(prompt);
+                aiResponse.innerHTML = markdownToHtml(text);
+            } catch (error) {
+                aiResponse.innerHTML = `<p class="text-red-500">Error: ${error.message}</p>`;
+            } finally {
+                aiResponse.classList.remove('loading');
+            }
+        });
+        setGoalBtn.addEventListener('click', () => {
+            const goalText = goalInputSidebar.value.trim();
+            goalDisplay.innerHTML = goalText ? `Your Goal: <span class="font-semibold text-teal-600">"${goalText}"</span>` : '';
+            goalDisplay.classList.toggle('hidden', !goalText);
+        });
+        clearBtn.addEventListener('click', resetSelections);
+        
+        sendPatientMessageBtn.addEventListener('click', handlePatientMessage);
+        patientInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handlePatientMessage(); });
+        sendProviderMessageBtn.addEventListener('click', handleProviderMessage);
+        providerInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleProviderMessage(); });
+        
+        providerSuggestions.addEventListener('click', function(e) {
+            const target = e.target;
+            if (target.classList.contains('edit-btn')) {
+                const targetId = target.dataset.target;
+                const displayEl = document.getElementById(`${targetId}-display`);
+                const editEl = document.getElementById(`${targetId}-edit`);
+                displayEl.classList.toggle('hidden');
+                editEl.classList.toggle('hidden');
+                target.textContent = target.textContent === 'Edit' ? 'Save' : 'Edit';
+            }
+        });
+        
+        shareSelectedBtn.addEventListener('click', () => {
+            const selectedCards = providerSuggestions.querySelectorAll('.suggestion-card');
+            selectedCards.forEach(card => {
+                const checkbox = card.querySelector('.suggestion-checkbox');
+                if (checkbox.checked) {
+                    const editEl = card.querySelector('[id$="-edit"]');
+                    const displayEl = card.querySelector('[id$="-display"]');
+                    const advice = editEl.classList.contains('hidden') 
+                        ? displayEl.querySelector('p').textContent 
+                        : editEl.querySelector('textarea').value;
+                    addMessageToChat(advice, 'provider', 'ai');
+                    card.remove();
+                }
+            });
+            if (providerSuggestions.children.length === 0) {
+                shareSelectedBtn.classList.add('hidden');
+            }
+        });
+
+        autoRespondToggle.addEventListener('change', function() {
+            const dot = this.nextElementSibling.nextElementSibling;
+            dot.classList.toggle('translate-x-full');
+            dot.parentElement.classList.toggle('bg-gray-300');
+            dot.parentElement.classList.toggle('bg-teal-500');
+        });
+
+        // --- INITIALIZATION ---
+        initializeBarriers();
+        initializeStrategies();
+    </script>
+</body>
+</html>

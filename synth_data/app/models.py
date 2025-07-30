@@ -101,3 +101,7 @@ class CliniversePatient(BaseModel):
 class ChatRequest(BaseModel):
     user_prompt: str
     patient: Optional[dict] = None # Make patient optional and default to None
+
+class AdviceRequest(BaseModel):
+    prompt: str
+    is_for_provider: bool = False
