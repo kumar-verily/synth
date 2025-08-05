@@ -256,8 +256,8 @@
         }
 
         async function getLLMAdvice(prompt, isForProvider = false) {
-            // const apiUrl = 'https://synth-production.up.railway.app/api/behavioral-advice';
-            const apiUrl = 'http://127.0.0.1:8000/api/behavioral-advice';
+            const apiUrl = 'https://synth-production.up.railway.app/api/behavioral-advice';
+            // const apiUrl = 'http://127.0.0.1:8000/api/behavioral-advice';
             try {
                 const response = await fetch(apiUrl, {
                     method: 'POST',

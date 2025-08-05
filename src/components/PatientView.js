@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+// Import necessary components from Recharts
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const PatientView = ({ patient, onSave }) => {
     const [isEditing, setIsEditing] = useState(false);
@@ -25,7 +27,13 @@ const PatientView = ({ patient, onSave }) => {
             for (let i = 0; i < keys.length - 1; i++) {
                 current = current[keys[i]];
             }
+            // Ensure A1C values are stored as numbers for the chart
+            if (path.includes('a1cData') && path.endsWith('a1c')) {
+                current[keys[keys.length - 1]] = parseFloat(value) || 0; // Convert to number, default to 0 if NaN
+            }
+            else {
             current[keys[keys.length - 1]] = value;
+            }
             return newPatient;
         });
     };
@@ -35,6 +43,10 @@ const PatientView = ({ patient, onSave }) => {
     }
 
     const patientToDisplay = isEditing ? editablePatient : patient;
+
+        // Make sure a1c data is numeric for charting
+    const chartData = patientToDisplay.a1cData.map(d => ({ ...d, a1c: Number(d.a1c) }));
+
 
     return (
         <>
@@ -70,8 +82,32 @@ const PatientView = ({ patient, onSave }) => {
                 <div>
                     <div className="card">
                         <h2 className="card-title">A1C History</h2>
-                        <ul>{patientToDisplay.a1cData.map((d, i) => <li key={i}>{d.name}: <strong>{d.a1c}</strong></li>)}</ul>
+                        {/* --- NEW: Chart Component --- */}
+                        <div style={{ width: '100%', height: 250 }}>
+                            <ResponsiveContainer>
+                                <LineChart
+                                    data={chartData}
+                                    margin={{
+                                        top: 5,
+                                        right: 20,
+                                        left: -10,
+                                        bottom: 5,
+                                    }}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="name" />
+                                    <YAxis domain={['dataMin - 1', 'dataMax + 1']} />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Line type="monotone" dataKey="a1c" stroke="#8884d8" activeDot={{ r: 8 }} name="A1C Level" />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
+                    {/* <div className="card">
+                        <h2 className="card-title">A1C History</h2>
+                        <ul>{patientToDisplay.a1cData.map((d, i) => <li key={i}>{d.name}: <strong>{d.a1c}</strong></li>)}</ul>
+                    </div> */}
                     <div className="card">
                         <h2 className="card-title">To Do</h2>
                         {patientToDisplay.toDo.map(item => <p key={item.id}>{item.text}</p>)}
