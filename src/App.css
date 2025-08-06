@@ -169,11 +169,10 @@
 .filter-clear-btn { background: none; border: none; color: #4f46e5; font-weight: 600; cursor: pointer; }
 .filter-clear-btn:hover { text-decoration: underline; }
 
-/* --- Chatbot Widget Styles --- */
 .chatbot-fab {
   position: fixed;
-  bottom: 2rem;
-  right: 2rem;
+  bottom: 20px;
+  right: 20px;
   width: 60px;
   height: 60px;
   background-color: #2563eb;
@@ -194,43 +193,22 @@
   background-color: #1d4ed8;
 }
 
-/* .chatbot-window {
-  position: fixed;
-  bottom: 7rem;
-  right: 2rem;
-  width: 370px;
-  height: 500px;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  z-index: 1000;
-} */
-
 .chatbot-window {
   position: fixed;
-  bottom: 7rem;
-  right: 2rem;
+  bottom: 92px; /* Positioned above the 60px FAB + 12px margin */
+  right: 20px;
   
-  /* --- APPLIED CHANGES --- */
+  width: 400px;
+  height: 600px;
   
-  /* 1. Set a new, wider default size */
-  width: 800px;
-  height: 1000px;
-  
-  /* 2. Set min/max boundaries for resizing */
   min-width: 350px;
   min-height: 400px;
   max-width: 80vw;
   max-height: 80vh;
 
-  /* 3. Add the resize handle and enable overflow */
-  resize: both;        /* Allows resizing horizontally and vertically */
-  overflow: auto;      /* This is required for the resize handle to appear */
+  resize: both;
+  overflow: auto;
 
-  /* --- Existing styles --- */
   background-color: white;
   border-radius: 12px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
@@ -246,6 +224,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  cursor: grab; /* Indicates the header is draggable for resizing */
 }
 
 .chatbot-header h3 {
@@ -267,42 +246,17 @@
   padding: 1rem;
   overflow-y: auto;
   background-color: #f3f4f6;
-}
-
-.chatbot-footer {
-  padding: 0.75rem;
-  border-top: 1px solid #e5e7eb;
   display: flex;
-  gap: 0.5rem;
+  flex-direction: column;
 }
 
-.chatbot-footer input {
-  flex-grow: 1;
-  padding: 0.5rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-}
-
-.chatbot-footer button {
-  padding: 0.5rem 1rem;
-  border: none;
-  background-color: #2563eb;
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.chatbot-footer button:hover {
-    background-color: #1d4ed8;
-}
-
-/* Add to the end of src/App.css */
 .chat-message {
   padding: 0.5rem 0.75rem;
   border-radius: 12px;
   margin-bottom: 0.5rem;
   max-width: 85%;
   line-height: 1.4;
+  word-wrap: break-word;
 }
 
 .chat-message.assistant {
@@ -317,7 +271,126 @@
   align-self: flex-end;
 }
 
-.chatbot-body {
+/* --- ADVANCED FOOTER STYLES --- */
+.chatbot-footer {
+  padding: 8px;
+  background-color: #f9f9f9;
+  border-top: 1px solid #e0e0e0;
+}
+
+.secondary-options-panel {
   display: flex;
-  flex-direction: column;
+  flex-direction: column; 
+  align-items: flex-end; 
+  gap: 8px;
+  padding: 8px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+}
+
+.option-item {
+  background-color: #f0f4f8;
+  color: #333;
+  border: 1px solid #d0d7de;
+  border-radius: 16px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  width: fit-content;
+  text-align: right;
+}
+
+.option-item:hover {
+  background-color: #e6ebf0;
+}
+
+/* .chatbot-input-bar {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 24px;
+  padding: 4px;
+  padding-left: 12px;
+} */
+
+.primary-actions {
+  display: flex;
+  gap: 6px;
+  margin-right: 8px;
+}
+
+.action-btn {
+  background: none;
+  border: 1px solid #ccc;
+  border-radius: 16px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #555;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.action-btn:hover {
+  background-color: #f0f0f0;
+}
+
+.action-btn.active {
+  background-color: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+/* .chatbot-input-bar input {
+  flex-grow: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  padding: 4px;
+} */
+
+.send-btn {
+  background-color: #2563eb;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.send-btn:disabled {
+  background-color: #93c5fd;
+  cursor: not-allowed;
+}
+
+
+.chatbot-input-bar {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 24px;
+  padding: 4px;
+  padding-left: 12px;
+  width: 100%; /* Ensure the bar takes the full width of the footer */
+}
+
+.chatbot-input-bar input {
+  flex-grow: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  padding: 4px;
+  /* --- THE FIX: Allows the input to shrink and grow properly in a flex container --- */
+  min-width: 0; 
 }
