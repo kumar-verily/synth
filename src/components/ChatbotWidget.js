@@ -16,14 +16,14 @@ const ChatbotWidget = ({ patient }) => {
 
     // --- Sample data for the new menus. You would fetch or pass this down as props.
     const deepSearchOptions = [
-        { id: 'ds1', prompt: 'Search Care Protocols', displayText: 'Search Care Protocols' },
-        { id: 'ds2', prompt: 'Check Medication Formulary', displayText: 'Check Formulary' },
-        { id: 'ds3', prompt: 'Analyze this Patient', displayText: 'Analyze this Patient' },
+        { id: 'ds1', prompt: 'Search Care Protocols', displayText: 'Search in Care Protocols' },
+        { id: 'ds2', prompt: 'Investigate Glucose Spike', displayText: 'Investigate Glucose Spike' },
+        { id: 'ds3', prompt: 'Assess ASCVD Risk per AHA PREVENT Risk calculator', displayText: 'Assess ASCVD Risk' },
     ];
     const deepActionOptions = [
         { id: 'da1', prompt: 'Initiate the workflow to send a new A1C home testing kit to this patient.', displayText: 'Send A1C Kit' },
-        { id: 'da2', prompt: 'Summarize the most recent clinical note for me.', displayText: 'Graduate Patient' },
-        { id: 'da3', prompt: 'What are the primary concerns noted in the care plan?', displayText: 'Scenario Planning' },
+        { id: 'da2', prompt: 'Nudge the Patient to do Move', displayText: 'Nudge Patient to do Move' },
+        { id: 'da3', prompt: 'Trigger a Survey on Med Aherence, Gather the data, find barriers and report back', displayText: 'Survey & Gather Adherence Data' },
     ];
 
 

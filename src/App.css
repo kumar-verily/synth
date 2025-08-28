@@ -198,7 +198,7 @@
   bottom: 92px; /* Positioned above the 60px FAB + 12px margin */
   right: 20px;
   
-  width: 400px;
+  width: 800px;
   height: 600px;
   
   min-width: 350px;
@@ -216,6 +216,7 @@
   flex-direction: column;
   z-index: 1000;
 }
+
 
 .chatbot-header {
   background-color: #2563eb;
